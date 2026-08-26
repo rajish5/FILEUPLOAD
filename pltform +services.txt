@@ -1,0 +1,16 @@
+pltform +services
+
+Insert tet box -
+
+
+Add the below in to slide 2
+
+1. common challanges migrating infa to databricks
+2. how the tool works more in to technical details
+
+
+See were we need to talk about database and sp calls
+
+2 emails sent by rajesh kumar hari kumar that has to be facted in to product features
+
+Migrated - Modernization 
