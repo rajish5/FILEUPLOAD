@@ -1,0 +1,248 @@
+* Production failure
+* ADF shows Succeeded, but the Databricks job didn't load the expected data.
+  Q. How would you investigate?
+A senior candidate should talk about checking:
+* ADF activity output
+* Databricks job run
+* input file count
+* records read/written
+* Spark logs
+* target count
+* audit/control tables
+* dependencies
+* timestamps/time zones
+
+
+
+* You have 1,000 files to process. Processing sequentially takes 5 hours. How would you improve it?
+Look for:
+* ForEach parallelism
+* batch count
+* Databricks concurrency
+* source/target limitations
+* avoiding uncontrolled parallelism
+
+3. Dynamic pipeline
+You receive files every day under:
+
+/raw/customer/2026/09/22/
+
+Tomorrow it becomes:
+
+/raw/customer/2026/09/23/
+
+How would you design the ADF pipeline so that you don't modify the pipeline every day?
+
+A source sends duplicate files every day. How would you prevent duplicate processing? Databricks
+
+What is VACUUM? What happens if you use it incorrectly?
+
+What happens if two Databricks jobs try to update the same Delta table simultaneously?
+
+1. Databricks job that normally takes 20 minutes suddenly takes 2 hours. How would you troubleshoot it?
+Expected discussion:
+* Spark UI
+* stages/tasks
+* shuffle
+* spill
+* skew
+* input size
+* partition count
+* executor memory/GC
+* query plan
+* joins
+* cluster configuration
+
+What is Spark AQE? What problems does it solve?
+* Look for: coalescing shuffle partitions, skew handling, dynamic join strategy.
+
+
+. Complex SQL — Customer purchase pattern
+Orders:
+
+customer_id | order_date | amount
+101         | 2026-01-10 | 500
+101         | 2026-01-20 | 700
+101         | 2026-02-10 | 800
+102         | 2026-01-10 | 100
+102         | 2026-02-10 | 200
+103         | 2026-01-10 | 1000
+103         | 2026-03-10 | 2000
+
+Question
+Find customers who:
+1. Placed at least 2 orders
+2. Had their second order within 30 days of their first order
+3. Their total purchase amount is greater than 1,000
+Answer
+
+WITH x AS (
+    SELECT
+        customer_id,
+        order_date,
+        amount,
+        ROW_NUMBER() OVER (
+            PARTITION BY customer_id
+            ORDER BY order_date
+        ) AS rn
+    FROM orders
+),
+first_second AS (
+    SELECT
+        customer_id,
+        MAX(CASE WHEN rn = 1 THEN order_date END) AS first_order,
+        MAX(CASE WHEN rn = 2 THEN order_date END) AS second_order
+    FROM x
+    GROUP BY customer_id
+),
+totals AS (
+    SELECT
+        customer_id,
+        SUM(amount) AS total_amount
+    FROM orders
+    GROUP BY customer_id
+)
+SELECT
+    f.customer_id,
+    f.first_order,
+    f.second_order,
+    t.total_amount
+FROM first_second f
+JOIN totals t
+    ON f.customer_id = t.customer_id
+WHERE f.second_order <= f.first_order + INTERVAL '30 days'
+  AND t.total_amount > 1000;
+
+2. Find gaps in employee salary history
+Table:
+
+employee_id | effective_date | salary
+101         | 2024-01-01     | 50000
+101         | 2025-01-01     | 60000
+101         | 2026-01-01     | 70000
+102         | 2024-01-01     | 50000
+102         | 2026-01-01     | 65000
+
+Question
+Find employees whose salary history has a gap of more than 1 year.
+Answer
+
+WITH x AS (
+    SELECT
+        employee_id,
+        effective_date,
+        LAG(effective_date) OVER (
+            PARTITION BY employee_id
+            ORDER BY effective_date
+        ) AS previous_date
+    FROM salary_history
+)
+SELECT *
+FROM x
+WHERE previous_date IS NOT NULL
+  AND effective_date > previous_date + INTERVAL '1 year';
+
+Expected: employee 102.
+
+2. Sessionization problem
+You have user events:
+
+user_id | event_time          | event
+1       | 2026-09-01 10:00:00 | login
+1       | 2026-09-01 10:10:00 | click
+1       | 2026-09-01 10:20:00 | click
+1       | 2026-09-01 11:00:00 | logout
+1       | 2026-09-01 14:00:00 | login
+2       | 2026-09-01 09:00:00 | login
+2       | 2026-09-01 09:20:00 | click
+
+A new session starts if the gap between consecutive events is more than 30 minutes.
+Question
+Create a session_id for every event.
+Answer
+
+from pyspark.sql.window import Window
+from pyspark.sql.functions import (
+    lag, col, when, sum
+)
+
+w = Window.partitionBy("user_id").orderBy("event_time")
+
+df1 = df.withColumn(
+    "previous_event",
+    lag("event_time").over(w)
+)
+
+df2 = df1.withColumn(
+    "new_session",
+    when(
+        col("previous_event").isNull() |
+        (
+            (col("event_time").cast("long") -
+             col("previous_event").cast("long")) > 1800
+        ),
+        1
+    ).otherwise(0)
+)
+
+df3 = df2.withColumn(
+    "session_id",
+    sum("new_session").over(w)
+)
+
+What this tests
+* lag
+* Window functions
+* Time calculations
+* Running aggregation
+* Real-world event processing
+
+
+4. Detect data quality issues
+Given:
+
+customer_id | email              | amount
+101         | raj@test.com       | 100
+102         | NULL               | 200
+101         | raj@test.com       | 100
+103         | kumar@test.com     | -50
+104         | invalid_email      | 300
+
+Question
+Using PySpark, identify records having:
+* NULL customer ID
+* NULL email
+* Negative amount
+* Invalid email format
+* Duplicate records
+Answer
+
+from pyspark.sql.functions import (
+    col, count, lit, regexp_extract
+)
+
+invalid = df.filter(
+    col("customer_id").isNull() |
+    col("email").isNull() |
+    (col("amount") < 0) |
+    ~col("email").rlike(
+        r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+    )
+)
+
+duplicates = df.groupBy(
+    "customer_id",
+    "email",
+    "amount"
+).agg(
+    count("*").alias("cnt")
+).filter(
+    col("cnt") > 1
+)
+
+Senior-level follow-up
+Ask:
+"How would you design this as a reusable data-quality framework instead of hardcoding these rules?"
+Look for configuration-driven rules, reusable functions, error/quarantine datasets, metrics and logging.
+
+
