@@ -1,0 +1,40 @@
+Here are 3 tough, scenario-based Unity Catalog interview questions for a senior Data Engineer with 19 years of experience, along with expected answers.
+
+### 1. Cross-team data access and governance
+
+Question: Your company has 3 teams — Finance, Risk, and Marketing — using the same Databricks workspace. Finance data contains sensitive customer information. How would you use Unity Catalog to ensure Marketing cannot access Finance data, while Risk can access only selected columns?
+
+Expected answer:
+
+- Use Unity Catalog's three-level namespace: `catalog.schema.table`.
+- Grant permissions using `GRANT` and `REVOKE`.
+- Use column-level permissions through appropriate views or column masks.
+- Use row filters if teams should see only specific records.
+- Apply least-privilege access and manage permissions through groups rather than individual users.
+
+### 2. Data access across multiple workspaces
+
+Question: Your organization has Dev, SIT, and Production Databricks workspaces. A developer can access a table in Dev but cannot access the same table in Production. How would you troubleshoot this?
+
+Expected answer:
+
+- Verify workspace-to-catalog bindings and whether the catalog is accessible from Production.
+- Check Unity Catalog privileges such as `USE CATALOG`, `USE SCHEMA`, and `SELECT`.
+- Verify the user's group membership and inherited permissions.
+- Check whether the compute resource uses Unity Catalog-compatible access mode.
+- Confirm that the external location and storage credentials are correctly configured if the issue involves external data.
+
+### 3. Secure access to ADLS data
+
+Question: A company stores 10 TB of data in Azure Data Lake Storage (ADLS). Databricks reads it using Unity Catalog external tables. A developer accidentally gets broad access to the storage account. How would you design the architecture to prevent unauthorized data access?
+
+Expected answer:
+
+- Register storage credentials and external locations in Unity Catalog.
+- Use Azure managed identities or service principals with least-privilege ADLS permissions.
+- Restrict access to external locations using Unity Catalog grants.
+- Use Unity Catalog managed or external tables according to ownership and data lifecycle requirements.
+- Apply row filters, column masks, and auditing where appropriate.
+- Avoid granting broad storage-account permissions or allowing users to bypass Unity Catalog controls.
+
+Interview tip: For a senior candidate, ask them to explain not only what they would configure, but also how they would troubleshoot permission inheritance, workspace isolation, and direct ADLS access bypassing Unity Catalog. That will help distinguish practical experience from theoretical knowledge.
