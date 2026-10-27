@@ -1,0 +1,42 @@
+Here are 3 real-world, scenario-based Azure questions you can ask a senior Data Engineer with 19 years of experience. These focus on Azure services beyond ADF, Synapse, and Databricks.
+
+## 1. Azure Functions vs Logic Apps
+
+Question: Your company receives files from multiple upstream systems. Whenever a new file arrives in ADLS, you must validate its name, check its metadata, trigger a downstream pipeline, and send an alert if validation fails. Would you use Azure Functions, Logic Apps, or ADF? Explain your design.
+
+Expected answer:
+
+- Azure Functions: For custom code, file validation, and complex processing logic.
+- Logic Apps: For event-driven workflows, notifications, and integrations.
+- ADF: For orchestrating data pipelines and moving or transforming data.
+- Use Event Grid to detect file-arrival events and trigger the appropriate service.
+
+Follow-up: How would you prevent duplicate processing if the same file-arrival event is delivered twice?
+
+## 2. Event Hubs vs Service Bus
+
+Question: A banking application generates millions of transaction events daily. Another system needs to process these events in near real time, while a separate application handles individual payment requests reliably. Would you use Azure Event Hubs or Azure Service Bus for each requirement? Why?
+
+Expected answer:
+
+- Event Hubs: High-throughput event streaming, analytics, and real-time ingestion.
+- Service Bus: Enterprise messaging, queues, dead-letter handling, and reliable business workflows.
+- Consider partitions, consumer groups, message ordering, retries, and duplicate handling.
+
+Follow-up: What happens if the consumer fails halfway through processing an event?
+
+## 3. Azure Key Vault and Managed Identity
+
+Question: A production data pipeline connects to ADLS, Azure SQL Database, and an external API. The team currently stores passwords and client secrets in configuration files. How would you redesign authentication securely in Azure?
+
+Expected answer:
+
+- Use Azure Key Vault to store secrets that are still required.
+- Use Managed Identity wherever supported to avoid storing credentials.
+- Apply least-privilege access through Azure RBAC or service-specific permissions.
+- Enable secret rotation, monitoring, and auditing.
+- Avoid hardcoding credentials in code, notebooks, or deployment files.
+
+Follow-up: If the pipeline runs successfully in development but receives an authorization error in production, how would you troubleshoot it?
+
+My recommendation: Ask Question 1 first. It tests whether the candidate can choose the right Azure service, explain the architecture, and handle failure scenarios—not just define Azure services.
