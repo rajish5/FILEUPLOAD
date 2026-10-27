@@ -1,0 +1,77 @@
+Yes, absolutely. Design pattern questions are very appropriate for a Data Engineering candidate with 19 years of experience, especially if you are interviewing for a Senior Data Engineer, Lead, or Data Architect role.
+
+However, don't focus only on software design patterns like Singleton or Factory. For a senior data engineer, prioritize data pipeline design patterns, architectural patterns, and real-world problem-solving scenarios.
+
+## 5 tough design pattern questions to ask
+
+### 1. Incremental Load Pattern
+
+Question: You have a 5 TB source table, and the business requires daily updates. Full loads take 6 hours, but the pipeline must finish within 45 minutes. How would you design the ingestion pattern?
+
+Expected answer:
+
+- Incremental ingestion using watermarks or CDC.
+- Process inserts, updates, and deletes.
+- Use Delta Lake `MERGE` for upserts where appropriate.
+- Handle late-arriving records and maintain restartability.
+- Optimize partitioning and file sizes.
+
+### 2. Medallion Architecture Pattern
+
+Question: Multiple source systems provide inconsistent customer data. How would you design a pipeline that preserves raw data, cleans it, and creates a trusted customer dataset?
+
+Expected answer:
+
+- Bronze: preserve source data.
+- Silver: validate, cleanse, deduplicate, and standardize.
+- Gold: business-ready datasets.
+- Implement data quality checks, lineage, and reconciliation.
+
+### 3. Idempotency Pattern
+
+Question: A Databricks job processes 100 million transactions but fails after writing 70 million. When rerun, how would you prevent duplicate records?
+
+Expected answer:
+
+- Use stable business keys and deterministic processing.
+- Use transactional writes and suitable `MERGE` logic.
+- Track batch IDs or processing checkpoints.
+- Design retries to produce the same final result without duplicates.
+
+### 4. Event-Driven Architecture Pattern
+
+Question: Files arrive unpredictably from 20 upstream systems. Some arrive late, some are duplicated, and some are corrupted. How would you design the ingestion architecture?
+
+Expected answer:
+
+- File-arrival events or a message queue to trigger processing.
+- Schema validation and quarantine for invalid files.
+- Idempotent processing and retry mechanisms.
+- Monitoring, alerting, and handling late arrivals.
+
+### 5. Metadata-Driven Framework Pattern
+
+Question: Your organization has 300 data pipelines. Every time a new table is onboarded, developers currently write a new notebook. How would you reduce development and maintenance effort?
+
+Expected answer:
+
+- Build a metadata-driven ingestion framework.
+- Store source, target, load type, keys, and watermark details in configuration tables.
+- Use reusable pipeline components.
+- Implement centralized logging, error handling, audit, and parameterization.
+- Allow exceptions for complex pipelines rather than forcing every use case into one generic framework.
+
+## What I recommend for your interview
+
+For a 30-minute interview with a 19-year experienced candidate, use this mix:
+
+| Topic                            | Questions | Time  |
+| -------------------------------- | --------- | ----- |
+| PySpark and SQL scenarios        | 2         | 8 min |
+| Data engineering design patterns | 2         | 8 min |
+| Architecture and trade-offs      | 2         | 8 min |
+| Governance, security, and cost   | 1–2       | 6 min |
+
+My suggestion: Ask the metadata-driven framework question and the idempotency question first. They reveal whether the candidate has genuinely designed production-grade data platforms or has mainly implemented existing pipelines.
+
+The key is to ask follow-ups such as “Why did you choose this pattern?”, “What alternatives did you consider?”, and “What happens when it fails?” These distinguish a senior engineer from someone who has memorized definitions.
