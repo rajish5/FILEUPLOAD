@@ -1,0 +1,205 @@
+Since you are the interviewer and the candidate has 19 years of data engineering experience, you should ask questions that test real-world problem-solving, architecture decisions, production troubleshooting, and trade-offs — not just definitions of Spark, SQL, or Databricks.
+
+For your 30-minute interview, here are five challenging, scenario-based questions with sample data, what to ask, and the answers you should expect from a senior candidate.
+
+# 5 real-world data engineering interview scenarios
+
+## Scenario 1: Daily data pipeline suddenly becomes 5× slower
+
+Advanced · Spark performance
+
+Ask the candidate:
+
+"You have a PySpark pipeline processing 500 GB of customer transaction data. It normally completes in 30 minutes, but today it takes 2.5 hours. There is no major increase in data volume. How would you investigate and resolve the issue?"
+
+Follow-up questions
+
+- How would you identify data skew?
+- When would you use broadcast joins?
+- How would you distinguish a shuffle problem from insufficient cluster resources?
+- Would you increase the cluster size immediately?
+
+Expected answer:
+
+A strong candidate should explain a systematic investigation:
+
+1. Check the Spark UI for slow stages, task duration, shuffle read/write, spill, and failed tasks.
+2. Compare input volume, data distribution, execution plans, and cluster metrics with previous successful runs.
+3. Check for skewed join keys, unexpected partition counts, data-source slowdowns, and changes in file sizes.
+4. Optimize the actual bottleneck: broadcast a genuinely small join side, handle skew, reduce unnecessary shuffles, or tune partitions.
+5. Scale resources only if evidence indicates resource constraints.
+
+Senior-level challenge: If 99 tasks finish in 20 seconds but one task takes 25 minutes, what is your likely diagnosis?
+
+Expected: a straggler, often caused by data skew, a large partition, or a slow task. The candidate should investigate rather than assume that adding executors will solve it.
+
+## Scenario 2: Duplicate records after pipeline reruns
+
+Advanced · Data correctness
+
+Ask the candidate:
+
+"An upstream system sends a daily customer transaction file. Your pipeline loads it into a target table. Yesterday's job failed after partially writing data. When the support team reruns it, some transactions appear twice. How would you redesign the pipeline to prevent this?"
+
+Sample source data
+
+| transaction_id | customer_id | amount | business_date |
+| -------------- | ----------- | ------ | ------------- |
+| T101           | C01         | 500    | Oct 26        |
+| T102           | C02         | 700    | Oct 26        |
+| T103           | C03         | 900    | Oct 26        |
+
+On rerun, the source contains the same three transactions.
+
+Follow-up questions
+
+- Would you use `append`, `overwrite`, or `MERGE`?
+- What if the same transaction arrives again three days later with an updated amount?
+- What if two copies of the same job run simultaneously?
+
+Expected answer:
+
+A strong candidate should discuss idempotency — running the same job repeatedly should not create unintended changes or duplicates.
+
+- Define a reliable business key, such as `transaction_id`.
+- Use an upsert or deduplication strategy appropriate to the target technology.
+- Track source file identity, batch ID, and processing status.
+- Use transactions or staging-and-publish patterns where supported.
+- Handle concurrent runs through locking, concurrency controls, or appropriate transactional logic.
+- Define how late-arriving updates and conflicting records should be handled.
+
+Red flag: The candidate says simply to use `DISTINCT`. That might remove duplicate rows within a dataset, but it does not solve every rerun, concurrency, or update problem.
+
+## Scenario 3: A join produces 10 times more rows than expected
+
+Advanced · SQL and data quality
+
+Ask the candidate:
+
+"You have two datasets. The customer table should contain one row per customer, and the transaction table contains multiple transactions per customer. After joining them, the output contains far more rows than expected, and the financial totals are inflated. How would you find and fix the issue?"
+
+Sample data
+
+Customers
+
+| customer_id | customer_name |
+| ----------- | ------------- |
+| C01         | Ravi          |
+| C01         | Ravi Kumar    |
+| C02         | Priya         |
+
+Transactions
+
+| transaction_id | customer_id | amount |
+| -------------- | ----------- | ------ |
+| T101           | C01         | 500    |
+| T102           | C01         | 300    |
+| T103           | C02         | 200    |
+
+Ask the candidate to predict the result of joining on `customer_id`.
+
+Expected answer:
+
+Customer C01 has two rows in the customer table and two transactions. Joining on `customer_id` creates four rows for C01, multiplying the transaction amounts in the joined output.
+
+A strong candidate should:
+
+1. Check uniqueness of the supposed customer key.
+2. Measure duplicate counts and compare row counts before and after the join.
+3. Establish the correct business rule for selecting the current customer record.
+4. Deduplicate or apply effective-date logic before joining, where appropriate.
+5. Validate financial totals against the source and expected reconciliation rules.
+
+Senior-level challenge: What if the customer table is a slowly changing dimension Type 2 table with multiple historical records per customer?
+
+Expected: join using the appropriate business key plus effective-date conditions, ensuring each transaction matches the correct historical dimension version.
+
+## Scenario 4: Data arrives late, out of order, and gets corrected
+
+Advanced · Streaming and incremental loads
+
+Ask the candidate:
+
+"Your pipeline processes transactions every 15 minutes. A transaction for 10:00 AM arrives at 11:30 AM. Later, the source sends a correction for that transaction. How do you ensure the reporting table stays accurate without reprocessing the entire history?"
+
+Sample events
+
+| transaction_id | event_time | arrival_time | amount |
+| -------------- | ---------- | ------------ | ------ |
+| T201           | 10:00      | 10:05        | 500    |
+| T202           | 10:15      | 10:20        | 700    |
+| T201           | 10:00      | 11:30        | 550    |
+
+Follow-up questions
+
+- What is the difference between event time and processing time?
+- How would you choose a watermark?
+- Would you use append-only ingestion or an upsert?
+- How would you recover after a pipeline outage lasting six hours?
+
+Expected answer:
+
+The candidate should distinguish event time from arrival or processing time, use a durable checkpoint or ingestion ledger, and choose a late-arrival policy based on business requirements.
+
+For a batch or micro-batch pipeline, they might use a lookback window plus key-based upserts. For streaming, they should explain event-time handling, watermark limitations, checkpoint recovery, and the treatment of corrections arriving outside the allowed lateness window.
+
+A strong answer will also mention that a watermark is not a universal guarantee that all late data is processed; late-event handling depends on the streaming engine and operation.
+
+## Scenario 5: A production migration passes testing but fails at scale
+
+Expert · Architecture and production operations
+
+Ask the candidate:
+
+"Your organization is migrating 300 ETL workflows from an existing platform to Databricks. The new pipelines produce correct results in testing, but production jobs run more slowly, cost more, and occasionally leave target tables partially updated after failures. How would you plan the migration and production rollout?"
+
+Follow-up questions
+
+- How would you prove source-to-target equivalence?
+- How would you handle partial failures across multiple workflows?
+- How would you decide which workloads to migrate first?
+- How would you compare cost per successful business pipeline?
+- What is your rollback strategy?
+
+Expected answer:
+
+A senior engineer should propose a controlled migration approach:
+
+1. Inventory workflows, dependencies, SLAs, data volumes, and upstream/downstream systems.
+2. Establish baseline execution times, resource consumption, and operational failure rates.
+3. Validate source-to-target results using counts, aggregates, business keys, and critical business rules.
+4. Use staging, transactional writes where supported, idempotent retries, and explicit workflow dependencies.
+5. Pilot representative workloads, measure performance and cost, and tune based on evidence.
+6. Implement observability, alerting, replay procedures, cutover controls, and a tested rollback plan.
+
+Expert-level challenge: Suppose a Databricks job calls an Oracle stored procedure that commits its changes, then the Databricks job fails before recording success. What happens on retry?
+
+Expected: the Oracle changes may already have committed. Retrying can duplicate effects unless the stored procedure and orchestration are designed for safe retries. The candidate should discuss transaction boundaries, idempotency keys, batch status, reconciliation, and recovery across system boundaries.
+
+## How to use these questions in your 30-minute interview
+
+| Time      | Activity                                                                            |
+| --------- | ----------------------------------------------------------------------------------- |
+| 0–3 min   | Ask the candidate to explain a difficult production issue they personally resolved. |
+| 3–8 min   | Scenario 1: Performance troubleshooting                                             |
+| 8–13 min  | Scenario 2: Duplicate prevention                                                    |
+| 13–18 min | Scenario 3: Join explosion and data correctness                                     |
+| 18–23 min | Scenario 4: Late-arriving data                                                      |
+| 23–28 min | Scenario 5: Migration and recovery                                                  |
+| 28–30 min | Ask about trade-offs and ownership of production incidents.                         |
+
+You do not need to ask every follow-up. Let the candidate explain their approach, then introduce one complication to test how deeply they understand it.
+
+## Interviewer scoring guide
+
+Score each scenario from 1 to 5.
+
+| Score | What it indicates                                                                                          |
+| ----- | ---------------------------------------------------------------------------------------------------------- |
+| 1     | Gives definitions without a workable solution                                                              |
+| 2     | Suggests basic fixes but misses important failure cases                                                    |
+| 3     | Provides a technically correct solution                                                                    |
+| 4     | Explains trade-offs, edge cases, and validation                                                            |
+| 5     | Demonstrates production experience, recovery design, measurable outcomes, and sound architectural judgment |
+
+For a candidate with 19 years of experience, focus especially on whether they ask clarifying questions, establish the root cause, explain trade-offs, and account for failure and recovery. You are assessing engineering judgment, not just whether they know particular technologies.
