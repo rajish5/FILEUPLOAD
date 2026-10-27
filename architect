@@ -1,0 +1,37 @@
+Here are 2 tough, real-world data architect interview questions suitable for a senior candidate with 19 years of experience.
+
+### 1. End-to-End Data Platform Architecture
+
+Scenario: A company processes 5 TB of data daily from 50 upstream systems. Data arrives in ADLS in different formats, and business teams expect reports within 30 minutes. The existing platform uses ADF, Databricks, and Azure Synapse. Data quality issues and pipeline failures are common.
+
+Question: As a data architect, how would you design the target architecture to meet the SLA, ensure data quality, handle failures, and control costs?
+
+Expected answer should cover:
+
+- Ingestion patterns: batch vs. incremental ingestion.
+- ADF orchestration and Databricks transformation.
+- ADLS data layers and Delta Lake.
+- Monitoring, retries, idempotency, and recovery.
+- Data governance, security, and Unity Catalog.
+- Performance optimization, cost control, and SLA monitoring.
+
+Follow-up: If one upstream system delivers data late, how would you prevent it from delaying all other pipelines?
+
+### 2. Architectural Trade-offs and Modernization
+
+Scenario: A company has 500 Informatica workflows running on an on-premises platform with an Oracle database. Management wants to migrate to Azure and Databricks. However, the existing platform is stable, migration costs are high, and some workloads must continue using Oracle stored procedures.
+
+Question: As a data architect, would you migrate everything to Databricks, retain some components, or adopt a hybrid architecture? Explain your target architecture and decision-making approach.
+
+Expected answer should cover:
+
+- Assessment of existing workflows and dependencies.
+- Lift-and-shift vs. re-engineering vs. hybrid migration.
+- Oracle stored procedure integration and data movement.
+- Performance benchmarking and cost-benefit analysis.
+- Security, networking, operational support, and rollback.
+- Phased migration, parallel validation, and cutover strategy.
+
+Follow-up: If the Databricks implementation takes twice as long as Informatica for the same workload, how would you investigate and decide whether to optimize it or retain the existing implementation?
+
+Interview tip: For a candidate with 19 years of experience, look for architectural reasoning, trade-offs, failure scenarios, and measurable decisions—not just knowledge of Azure services.
