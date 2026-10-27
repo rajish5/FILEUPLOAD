@@ -1,0 +1,148 @@
+Question 1 — Deduplication using Window Functions
+Hard
+Give the candidate this DataFrame:
+customer_id	name	amount	updated_at
+101	Ravi	500	2026-10-25 10:00
+101	Ravi	800	2026-10-26 11:00
+102	Kumar	300	2026-10-24 09:00
+102	Kumar	400	2026-10-26 12:00
+103	Priya	900	2026-10-25 15:00
+
+Ask him to write code to:
+1. Retain only the latest record for each customer.
+2. Return all columns.
+3. Handle ties in updated_at deterministically if a suitable tie-breaker is available.
+Expected output:
+customer_id	name	amount	updated_at
+101	Ravi	800	2026-10-26 11:00
+102	Kumar	400	2026-10-26 12:00
+103	Priya	900	2026-10-25 15:00
+
+Expected solution:
+from pyspark.sql import functions as Ffrom pyspark.sql.window import Windowwindow_spec = (    Window.partitionBy("customer_id")    .orderBy(F.col("updated_at").desc()))result = (    df.withColumn("rn", F.row_number().over(window_spec))      .filter(F.col("rn") == 1)      .drop("rn"))result.show()
+
+
+
+Follow-up: Why can't we simply use dropDuplicates(["customer_id"])?
+
+Expected: It does not guarantee that the latest record is retained.
+
+Question 2 — Find employees earning more than their department average
+Hard
+Input DataFrame:
+emp_id	name	department	salary
+1	Arun	IT	80000
+2	Banu	IT	60000
+3	Charan	IT	100000
+4	Divya	HR	50000
+5	Ezhil	HR	70000
+
+Ask him to write PySpark code to find employees whose salary is greater than their department's average salary.
+
+Expected output:
+emp_id	name	department	salary
+1	Arun	IT	80000
+3	Charan	IT	100000
+5	Ezhil	HR	70000
+
+Expected solution:
+from pyspark.sql import functions as Ffrom pyspark.sql.window import Windoww = Window.partitionBy("department")result = (    df.withColumn("avg_salary", F.avg("salary").over(w))      .filter(F.col("salary") > F.col("avg_salary"))      .drop("avg_salary"))result.show()
+
+
+
+Follow-up: Can you solve it using groupBy() and a join instead of a window function? What are the trade-offs?
+
+Question 3 — Identify missing dates in daily transactions
+Very hard
+Input DataFrame:
+customer_id	transaction_date	amount
+101	2026-10-01	100
+101	2026-10-02	200
+101	2026-10-05	300
+102	2026-10-01	150
+102	2026-10-03	250
+
+Ask him to write code to identify missing transaction dates for each customer between their first and last transaction dates.
+
+Expected output:
+customer_id	missing_date
+101	2026-10-03
+101	2026-10-04
+102	2026-10-02
+
+Expected solution:
+from pyspark.sql import functions as Fbounds = (    df.groupBy("customer_id")      .agg(          F.min("transaction_date").alias("start_date"),          F.max("transaction_date").alias("end_date")      ))calendar = bounds.withColumn(    "missing_date",    F.explode(        F.expr("sequence(to_date(start_date), to_date(end_date), interval 1 day)")    )).select("customer_id", "missing_date")actual = df.select(    "customer_id",    F.to_date("transaction_date").alias("transaction_date")).distinct()result = calendar.join(    actual,    (calendar.customer_id == actual.customer_id) &    (calendar.missing_date == actual.transaction_date),    "left_anti")result.select("customer_id", "missing_date").orderBy(    "customer_id", "missing_date").show()
+
+
+
+Note: This assumes transaction_date can be converted to a date. The solution can generate many rows if the date ranges are very large.
+
+Follow-up: How would you redesign this for millions of customers with long date ranges?
+
+Question 4 — Join two DataFrames without duplicating transactions
+Very hard
+Transactions:
+txn_id	customer_id	amount
+T1	101	500
+T2	102	700
+T3	101	300
+
+Customer master:
+customer_id	city
+101	Chennai
+101	Bengaluru
+102	Mumbai
+
+Ask him to join the two DataFrames and return one row per transaction, using the correct city.
+
+This is deliberately tricky: customer 101 has two master records. The question is incomplete until the candidate clarifies which city should be selected.
+
+What a strong candidate should do:
+- Ask what makes a customer-master record authoritative.
+- Identify duplicate business keys before joining.
+- Apply a business rule, such as selecting the latest effective record, if appropriate.
+- Validate that the join preserves transaction counts.
+Follow-up: Write the code to select the latest customer-master record before joining. What columns would you need to do this reliably?
+
+This tests data modelling and correctness, not just PySpark syntax.
+
+Question 5 — Running total and previous transaction amount
+Hard
+Input DataFrame:
+customer_id	txn_date	amount
+101	2026-10-01	100
+101	2026-10-02	200
+101	2026-10-03	150
+102	2026-10-01	300
+102	2026-10-02	100
+
+Ask him to write code to calculate:
+1. Running total per customer.
+2. Previous transaction amount.
+3. Difference between the current and previous transaction amounts.
+Expected output:
+customer_id	txn_date	amount	running_total	previous_amount	difference
+101	2026-10-01	100	100	NULL	NULL
+101	2026-10-02	200	300	100	100
+101	2026-10-03	150	450	200	-50
+102	2026-10-01	300	300	NULL	NULL
+102	2026-10-02	100	400	300	-200
+
+Expected solution:
+from pyspark.sql import functions as Ffrom pyspark.sql.window import Windoww = (    Window.partitionBy("customer_id")    .orderBy("txn_date"))running_w = w.rowsBetween(    Window.unboundedPreceding,    Window.currentRow)result = (    df.withColumn("running_total", F.sum("amount").over(running_w))      .withColumn("previous_amount", F.lag("amount").over(w))      .withColumn(          "difference",          F.col("amount") - F.col("previous_amount")      ))result.show()
+
+
+
+Follow-up: What if two transactions have the same date? How would you make the output deterministic?
+
+Expected: Add a unique transaction sequence or timestamp to the ordering.
+
+How I would conduct your 30-minute coding interview
+Time	Exercise	What it tests
+0–5 min	Question 1	Window functions and deduplication
+5–10 min	Question 2	Aggregation and analytical windows
+10–17 min	Question 3	Date handling and complex transformations
+17–24 min	Question 4	Join correctness and data quality
+24–30 min	Question 5	Window frames and analytical logic
+
+My recommendation: Start with Question 1, then give Question 4. The first tests coding fundamentals; the fourth reveals whether a senior engineer understands data correctness and business-key problems. Ask the candidate to explain the code and edge cases as they write it.
