@@ -1,0 +1,38 @@
+Here are 3 tough, real-world scenario-based questions on Delta Lake you can ask a senior Data Engineer with 19 years of experience, along with expected answers.
+
+### 1. Concurrent writes and data consistency
+
+Question: Two Databricks jobs are updating the same Delta table simultaneously. One job performs an `UPDATE`, while another performs an `INSERT`. What problems could occur, and how would you handle them?
+
+Expected answer:
+
+- Delta Lake uses optimistic concurrency control to manage concurrent transactions.
+- If conflicting operations occur, one transaction may fail with a concurrency exception.
+- Retry the failed transaction where appropriate, and redesign jobs to minimize overlapping writes.
+- Use appropriate partitioning and separate write scopes when possible.
+
+### 2. Small files and performance issues
+
+Question: Your Delta table receives 10 million records every 10 minutes. After a few months, queries become slow because the table contains thousands of small files. How would you troubleshoot and fix this?
+
+Expected answer:
+
+- Analyze file sizes, query execution plans, and Spark scan performance.
+- Use OPTIMIZE to compact small files.
+- Consider liquid clustering or appropriate data layout strategies based on query patterns.
+- Tune ingestion to avoid creating too many small files.
+- Use `VACUUM` only when appropriate to remove eligible obsolete files; it is not a small-file compaction operation.
+
+### 3. Schema evolution and production failures
+
+Question: An upstream application adds a new column to its source data. Your Databricks pipeline writes into an existing Delta table and suddenly fails because of a schema mismatch. How would you resolve this without breaking downstream reports?
+
+Expected answer:
+
+- Inspect the incoming and target schemas.
+- Decide whether the new column is backward-compatible and whether downstream consumers need it.
+- Use controlled schema evolution, such as `mergeSchema` or an appropriate schema evolution option for `MERGE`.
+- Validate the changes in a lower environment before deploying to production.
+- Avoid blindly enabling schema evolution because unexpected source changes could affect downstream consumers.
+
+Interview tip: Ask the candidate to explain the trade-offs and give a production example. A senior engineer should explain not only what to do, but also why, the risks, and how they would prevent recurrence.
