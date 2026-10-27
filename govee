@@ -1,0 +1,45 @@
+Here are 3 tough, real-world data governance scenario-based questions you can ask a senior Data Engineer with 19 years of experience.
+
+### 1. Data Quality and Governance
+
+Scenario: A daily customer pipeline loads 10 million records into a data lake. You discover that 2% of records contain invalid customer IDs, but the business team expects the report by 9 AM.
+
+Question: How would you handle this situation while ensuring data quality and governance?
+
+Expected answer:
+
+- Define data quality rules and validation checks.
+- Quarantine invalid records instead of silently dropping them.
+- Publish valid records only if business rules permit partial data.
+- Maintain audit logs, error counts, and data lineage.
+- Notify stakeholders and arrange remediation or reprocessing.
+
+### 2. Sensitive Data and Access Control
+
+Scenario: A data lake contains customer names, account numbers, and transaction details. Developers need access to debug pipelines, but they should not see sensitive customer information.
+
+Question: How would you design data access and protection across development, testing, and production?
+
+Expected answer:
+
+- Apply least-privilege access using role-based access control.
+- Mask or tokenize sensitive columns in non-production environments.
+- Encrypt data at rest and in transit.
+- Audit access and periodically review permissions.
+- Use column-level permissions and row filters where appropriate.
+
+### 3. Data Lineage and Regulatory Compliance
+
+Scenario: A business report shows incorrect financial figures. The data passes through several source systems, ADF pipelines, Databricks transformations, and reporting tables. An auditor asks you to identify the source of the incorrect figure and prove which transformations were applied.
+
+Question: How would you trace the issue end to end and demonstrate compliance?
+
+Expected answer:
+
+- Implement end-to-end data lineage from source to report.
+- Maintain metadata, transformation logic, schema versions, and pipeline execution logs.
+- Capture data quality results and reconciliation totals.
+- Identify the affected datasets and downstream reports.
+- Preserve audit evidence and provide a controlled reprocessing process.
+
+Panel tip: For a senior candidate, ask a follow-up: “Which governance controls would you implement technically, and how would you prove they are working?” Look for specific implementation details, trade-offs, auditability, and ownership—not just definitions of governance.
