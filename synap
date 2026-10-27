@@ -1,0 +1,153 @@
+Since you are interviewing a senior data engineer with around 19 years of experience, here are 10 practical, scenario-based questions on Azure Data Factory (ADF) and Azure Synapse Analytics, with expected answers. These will help you evaluate real-world experience rather than just theoretical knowledge.
+
+## 1. Azure Data Factory — Scenario-based questions
+
+### Q1. Pipeline failure and restart
+
+Scenario: An ADF pipeline processes 100 files. It successfully processes 70 files, but fails on the 71st file. How would you restart the pipeline without processing all 70 files again?
+
+Expected answer:
+
+- Maintain a control or audit table to track file processing status.
+- Mark successfully processed files as completed.
+- On restart, retrieve only pending or failed files.
+- Use idempotent processing to prevent duplicate records.
+- Configure retry policies for transient errors.
+
+Follow-up: What happens if the pipeline succeeds but updating the audit table fails?
+
+### Q2. Incremental data loading
+
+Scenario: A source SQL table contains 500 million records. Every day, only 50,000 records change. How would you design an ADF pipeline to load only changed records?
+
+Expected answer:
+
+- Use a watermark column such as `LastModifiedDate`, or Change Data Capture (CDC) where appropriate.
+- Store the last successful watermark.
+- Extract records between the previous and current watermark.
+- Update the watermark only after successful processing.
+- Handle late-arriving updates and deletes.
+
+Follow-up: What if multiple records have the same timestamp?
+
+### Q3. Performance optimization
+
+Scenario: An ADF Copy Activity takes four hours to move 200 GB of data from an on-premises SQL Server to ADLS Gen2. How would you reduce the execution time?
+
+Expected answer:
+
+- Check source query performance and destination throughput.
+- Review Integration Runtime sizing and network bandwidth.
+- Tune parallel copies and partitioning.
+- Use appropriate file formats and file sizes.
+- Monitor bottlenecks rather than blindly increasing parallelism.
+
+Follow-up: How would you determine whether the bottleneck is the source database or ADF?
+
+### Q4. Dynamic pipeline design
+
+Scenario: You need to ingest data from 100 tables. Each table has a different schema and primary key. Would you create 100 pipelines?
+
+Expected answer:
+
+- Build a metadata-driven pipeline.
+- Store table names, load types, primary keys and watermark columns in a configuration table.
+- Use Lookup, ForEach and parameterized Copy Activities.
+- Separate common ingestion logic from table-specific configuration.
+- Handle exceptions and log results per table.
+
+Follow-up: How would you handle a new column appearing in one source table?
+
+### Q5. ADF versus Azure Functions
+
+Scenario: Your client uses Autosys to schedule Informatica workflows. They want to move orchestration to Azure. One team proposes ADF, while another proposes Azure Functions. Which would you recommend?
+
+Expected answer:
+
+- ADF: Best suited to data pipeline orchestration, Copy Activity, dependencies, retries and monitoring.
+- Azure Functions: Best suited to custom event-driven code, lightweight processing and API integrations.
+- Hybrid approach: ADF orchestrates the workflow and calls Azure Functions for specialized logic when necessary.
+
+A strong candidate should compare scheduling, dependencies, operational monitoring, execution limits and maintainability before recommending a solution.
+
+## 2. Azure Synapse Analytics — Scenario-based questions
+
+### Q6. Dedicated SQL pool performance
+
+Scenario: A fact table contains 2 billion rows in Synapse Dedicated SQL Pool. Queries joining it to a dimension table are very slow. How would you troubleshoot and optimize them?
+
+Expected answer:
+
+- Review the query execution plan and data movement.
+- Choose an appropriate distribution strategy: hash, round-robin or replicated.
+- Consider hash distribution on a frequently joined, high-cardinality key.
+- Use columnstore indexes where appropriate.
+- Review statistics, data skew and table design.
+- Consider partitioning when it helps data management or query performance.
+
+Follow-up: Why can a hash-distributed table still perform poorly?
+
+### Q7. Data skew
+
+Scenario: A large Synapse query runs across 60 distributions, but one distribution takes much longer than the others. What could be the reason?
+
+Expected answer:
+
+- Uneven distribution of key values.
+- A low-cardinality or heavily repeated distribution key.
+- Uneven workload or expensive operations on particular data.
+- Inspect distribution-level row counts and execution details.
+- Select a better distribution key or use replication for a suitable small dimension.
+
+### Q8. ADF versus Synapse
+
+Scenario: Your architecture requires data ingestion from APIs, transformation of large datasets and SQL-based reporting. Which responsibilities belong to ADF and which belong to Synapse?
+
+Expected answer:
+
+| Azure Data Factory                 | Azure Synapse                                                    |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| Orchestrates pipelines             | Provides analytics and SQL processing                            |
+| Copies data between systems        | Stores and queries data in dedicated SQL pools or serverless SQL |
+| Manages dependencies and retries   | Runs SQL transformations and analytical queries                  |
+| Invokes supported compute services | Can integrate Spark-based processing through Synapse Spark pools |
+
+A strong candidate should explain that these services complement each other; they are not direct substitutes.
+
+### Q9. Serverless versus Dedicated SQL Pool
+
+Scenario: A business team needs to query Parquet files in ADLS occasionally. Another team runs hundreds of concurrent analytical queries every day. Which Synapse SQL option would you choose for each?
+
+Expected answer:
+
+- Serverless SQL pool: Query files directly in the data lake without provisioning a dedicated data warehouse.
+- Dedicated SQL pool: Suitable for provisioned data warehouse workloads requiring managed compute capacity and designed warehouse tables.
+- Evaluate query frequency, concurrency, performance requirements and cost.
+
+Follow-up: Does serverless SQL automatically store the queried data in a dedicated warehouse?
+
+### Q10. End-to-end pipeline failure
+
+Scenario: ADF successfully copies data into ADLS, but the subsequent Synapse transformation fails. The business expects the previous day's reports to remain available. How would you design the solution?
+
+Expected answer:
+
+- Land incoming data in a staging area.
+- Validate completeness and data quality before publishing.
+- Transform into a separate target or staging table.
+- Publish the validated data through a controlled switch, transaction or other appropriate release mechanism.
+- Maintain audit records, recovery steps and alerts.
+- Avoid exposing partially processed data to reporting users.
+
+## How to use these questions in a 30-minute interview
+
+| Time      | Activity                               |
+| --------- | -------------------------------------- |
+| 5 minutes | Q1 — Restart and recovery              |
+| 5 minutes | Q2 — Incremental loading               |
+| 5 minutes | Q3 — Performance tuning                |
+| 5 minutes | Q5 — ADF versus Functions architecture |
+| 5 minutes | Q6 or Q7 — Synapse optimization        |
+| 5 minutes | Q10 — End-to-end design                |
+
+My recommendation: For someone with 19 years of experience, focus on the reasoning behind the solution. Ask what they would monitor, what could fail, how they would recover, and why they chose that architecture. A senior candidate should be able to discuss trade-offs and operational issues, not just name Azure services.
